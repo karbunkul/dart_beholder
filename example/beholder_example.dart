@@ -96,4 +96,6 @@ void main() {
 
   logger.trace(LogEntry('value $isReleaseMode'), tags: [AppLogTag.network]);
   logger.trace(LogEntry('value 234'), tags: [AppLogTag.ui]);
+
+  print(StackTrace.current);
 }

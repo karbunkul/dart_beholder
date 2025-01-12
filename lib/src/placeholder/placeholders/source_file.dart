@@ -18,11 +18,11 @@ final class SourceFilePlaceholder extends ContextPlaceholder {
     }
 
     final source = splitStackTrace.elementAt(depth);
-    final pattern = RegExp(r'file\:.[^\)]+');
+    final pattern = RegExp(r'file|package\:.[^\)]+');
     final matched = pattern.firstMatch(source);
-    if (matched?.start != -1) {
+    if (matched != null && matched.start != -1) {
       return source
-          .substring(matched!.start, matched.end)
+          .substring(matched.start, matched.end)
           .replaceFirst(RegExp(r':\d+$'), '');
     }
 
