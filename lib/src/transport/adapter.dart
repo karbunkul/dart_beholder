@@ -5,11 +5,11 @@ typedef OnLogOverrideCallback<T> = Future<T> Function(RecordEntry entry);
 @immutable
 final class TransportAdapter<T extends Object> extends Transport<T> {
   final Transport transport;
-  final OnLogOverrideCallback<T> onLogOverride;
+  final OnLogOverrideCallback<T> onLog;
 
   const TransportAdapter({
     required this.transport,
-    required this.onLogOverride,
+    required this.onLog,
   });
 
   @override
@@ -18,7 +18,7 @@ final class TransportAdapter<T extends Object> extends Transport<T> {
   }
 
   @override
-  Future<T> log(RecordEntry entry) {
-    return onLogOverride(entry);
+  Future<T> log(RecordEntry record) {
+    return onLog(record);
   }
 }

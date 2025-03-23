@@ -41,16 +41,16 @@ final class _Settings extends BeholderOptions<AppLogTag> {
         level: 100,
         name: 'trace',
         transports: [
-          ConsoleTransport(),
-          FileTransport(filename: './log-2.txt'),
+          // ConsoleTransport(),
+          // FileTransport(filename: './log-2.txt'),
           RecordTransport(),
-          // TransportAdapter(
-          //   transport: ConsoleTransport(),
-          //   onLogOverride: (entry) async {
-          //     return entry.placeholder.template(
-          //         '[{log_level_name}][{log_name} {log_tags}: {log_date_time}]\n{source_file}');
-          //   },
-          // ),
+          TransportAdapter(
+            transport: ConsoleTransport(),
+            onLog: (record) async {
+              return record.placeholder.template(
+                  '[{log_level_name}][{log_name} {log_tags}: {log_date_time}]\n{source_file}');
+            },
+          ),
         ],
       ),
     ];
@@ -78,24 +78,33 @@ final class Logger extends Beholder<AppLogTag> {
       ],
     );
   }
+
+  @override
+  void stackInfo({required String message, required Object info}) {
+    super.stackInfo(message: message, info: info);
+    trace(LogEntry(info, description: message));
+  }
 }
 
-void main() {
+Future<void> main() async {
   const bool isReleaseMode = bool.fromEnvironment('dart.vm.product');
   final logger = Logger('test');
 
   logger.record.listen((value) {
-    print(value.level);
+    print(value.toString());
   });
 
   logger.filters
     ..level(100)
-    ..tag(AppLogTag.ui)
-    //..reset()
+    // ..tag(AppLogTag.ui)
+    ..reset()
     ..apply();
 
   logger.trace(LogEntry('value $isReleaseMode'), tags: [AppLogTag.network]);
   logger.trace(LogEntry('value 234'), tags: [AppLogTag.ui]);
+  logger.stackInfo(message: 'foo', info: 2);
+  logger.stackInfo(message: 'bar', info: 4);
 
-  print(StackTrace.current);
+  logger.rethrowWithStackInfo(UnimplementedError(), StackTrace.current);
+  await Future.delayed(const Duration(milliseconds: 300), logger.dispose);
 }

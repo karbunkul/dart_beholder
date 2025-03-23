@@ -5,14 +5,41 @@ abstract base class Beholder<T extends Object> {
   final String name;
   final BeholderOptions<T> _options;
 
-  const Beholder({
+  Beholder({
     required this.name,
     required BeholderOptions<T> settings,
   }) : _options = settings;
 
-  CacheController get cache => BeholderController.instance().cache(runtimeType);
-  FilterBuilder<T> get filters => FilterBuilder<T>(onFilter: _onFilterChanged);
+  final _stackInfo = StackInfoController();
+
+  CacheController get cache {
+    return BeholderController.instance().cache(runtimeType);
+  }
+
+  FilterBuilder<T> get filters {
+    return FilterBuilder<T>(onFilter: _onFilterChanged);
+  }
+
   Stream<RecordEntry> get record => BeholderController.instance().record.stream;
+
+  void stackInfo({required String message, required Object info}) {
+    _stackInfo.add((data: info, message: message));
+  }
+
+  void dispose() => BeholderController.instance().record.close();
+
+  Never rethrowWithStackInfo(Object error, StackTrace stackTrace) {
+    final items = <String>[];
+    for (final stackInfo in _stackInfo.items) {
+      items.add('  - ${stackInfo.message} ${stackInfo.data}');
+    }
+
+    final newStack = 'Logger ($name) stack info:\n'
+        '${items.join('\n')}'
+        '\nStackTrace:\n'
+        '${stackTrace.toString()}';
+    Error.throwWithStackTrace(error, StackTrace.fromString(newStack));
+  }
 
   @protected
   void log({
@@ -61,14 +88,15 @@ abstract base class Beholder<T extends Object> {
     );
     final logTags = (tags ?? []).map((e) => _options.mapTagToString(e));
 
+    final record = RecordEntry(
+      log: entry,
+      placeholder: placeholder,
+      level: level,
+      time: logTime,
+      tags: logTags,
+    );
+
     for (final transport in transports) {
-      final record = RecordEntry(
-        log: entry,
-        placeholder: placeholder,
-        level: level,
-        time: logTime,
-        tags: logTags,
-      );
       unawaited(transport.log(record).then(transport.handle));
     }
   }

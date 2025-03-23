@@ -8,7 +8,7 @@ final class FileTransport extends Transport<RecordEntry> {
   });
 
   @override
-  Future<void> handle(log) async {
+  Future<void> handle(RecordEntry log) async {
     final file = File(filename);
     final message = await log.placeholder.template(
       '[{log_level_name} {log_tags}][{log_name}: {log_date_time}]'
@@ -19,5 +19,5 @@ final class FileTransport extends Transport<RecordEntry> {
   }
 
   @override
-  Future<RecordEntry> log(entry) async => entry;
+  Future<RecordEntry> log(RecordEntry record) async => record;
 }

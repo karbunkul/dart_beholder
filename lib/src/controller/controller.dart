@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'package:beholder/src/transport/transport.dart';
 import 'package:meta/meta.dart';
 
@@ -6,6 +7,7 @@ import '../filter/filter.dart';
 
 part 'cache.dart';
 part 'record.dart';
+part 'stack_info.dart';
 
 @immutable
 @internal

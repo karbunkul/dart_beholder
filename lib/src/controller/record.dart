@@ -4,7 +4,15 @@ part of 'controller.dart';
 final class RecordController {
   final _controller = StreamController<RecordEntry>.broadcast();
 
-  void add(RecordEntry entry) => _controller.add(entry);
+  void add(RecordEntry entry) {
+    if (!_controller.isClosed) {
+      _controller.add(entry);
+    }
+  }
 
   Stream<RecordEntry> get stream => _controller.stream;
+
+  void close() {
+    _controller.close();
+  }
 }

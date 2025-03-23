@@ -6,6 +6,7 @@ abstract base class BeholderOptions<T extends Object> {
   int get logLevel;
 
   Transport? get fallbackTransport => null;
+  LogLevel? get stackInfoLevel => null;
 
   List<ContextPlaceholder> get placeholders => [];
 
@@ -24,4 +25,6 @@ abstract base class BeholderOptions<T extends Object> {
       }
     }
   }
+
+  Iterable<LogEntryConverter> logConverters() => [];
 }
