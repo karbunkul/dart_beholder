@@ -1,16 +1,19 @@
 part of 'core.dart';
 
-typedef OnMapCallback<T extends Object> = String Function(T data);
-
+/// Represents a single unit of data to be logged.
+///
+/// [D] is the type of the data (e.g., [String], [Map], or a custom object).
 @immutable
-final class LogEntry<T extends Object> {
-  final T data;
-  final String? description;
-  final OnMapCallback<T>? onMap;
+class LogEntry<D extends Object> {
+  /// The actual data or message to be logged.
+  final D data;
 
-  const LogEntry(
-    this.data, {
-    this.description,
-    this.onMap,
-  });
+  /// Optional error object associated with this log entry.
+  final Object? error;
+
+  /// Optional stack trace associated with this log entry.
+  final StackTrace? stackTrace;
+
+  /// Creates a [LogEntry] with the given [data] and optional error context.
+  const LogEntry(this.data, {this.error, this.stackTrace});
 }

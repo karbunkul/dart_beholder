@@ -37,6 +37,11 @@ final class FilterBuilder<T extends Object> {
   }
 
   FilterBuilder reset() {
+    final sourceFile = SourceFilePlaceholder(
+      depth: 1,
+      stackTrace: StackTrace.current,
+    );
+    print('Warning: Reset filters in ${sourceFile.resolve()}');
     _filters.clear();
     onFilter(FilterState(filters: []));
     return this;

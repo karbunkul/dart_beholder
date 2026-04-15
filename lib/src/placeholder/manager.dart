@@ -1,22 +1,20 @@
 part of 'placeholder.dart';
 
-@immutable
 final class PlaceholderManager {
-  final Type _beholderType;
   final List<ContextPlaceholder> _placeholders;
-
-  late final _cache = BeholderController.instance().cache(_beholderType);
+  CacheController? _cache;
 
   PlaceholderManager({
     required List<ContextPlaceholder> placeholders,
-    required Type beholderType,
-  })  : _placeholders = placeholders,
-        _beholderType = beholderType;
+  }) : _placeholders = placeholders;
+
+  void attach(CacheController cache) => _cache = cache;
 
   FutureOr<String> _replace(String placeholder) async {
     await Future.delayed(Duration.zero);
-    if (_cache.hasCache(key: placeholder)) {
-      return _cache.get(key: placeholder)!;
+    final cache = _cache;
+    if (cache != null && cache.has(key: placeholder)) {
+      return cache.get(key: placeholder)!;
     }
 
     final placeholderInstance = _placeholders
@@ -25,7 +23,7 @@ final class PlaceholderManager {
     final value = await placeholderInstance.resolve();
 
     if (placeholderInstance.cacheable) {
-      _cache.set(key: placeholder, value: value);
+      _cache?.set(key: placeholder, value: value);
     }
 
     return value;

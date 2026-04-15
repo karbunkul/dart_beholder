@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:meta/meta.dart';
 
-import '../controller/controller.dart';
+import '../core/core.dart';
 
 export 'placeholders/placeholders.dart';
 

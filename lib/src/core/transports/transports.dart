@@ -1,9 +1,7 @@
+import 'dart:async';
 import 'dart:io';
 
-import 'package:beholder/src/controller/controller.dart';
-import 'package:beholder/src/core/core.dart';
-import 'package:beholder/src/transport/transport.dart';
-import 'package:meta/meta.dart';
+import 'package:beholder/beholder.dart';
 
 part 'file_transport.dart';
-part 'record_transport.dart';
+part 'console_transport.dart';

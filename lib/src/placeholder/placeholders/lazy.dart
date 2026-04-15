@@ -1,16 +1,22 @@
 part of 'placeholders.dart';
 
-typedef OnPlaceholderCallback = String Function();
+/// A callback that returns a string value for a placeholder.
+typedef PlaceholderLoader = String Function();
 
-base class LazyPlaceholder extends ContextPlaceholder {
-  final OnPlaceholderCallback value;
+/// A placeholder that computes its value lazily when resolved.
+///
+/// This is useful for dynamic values that might change or are expensive to compute.
+final class LazyPlaceholder extends ContextPlaceholder {
+  /// The function used to compute the placeholder value.
+  final PlaceholderLoader loader;
 
+  /// Creates a [LazyPlaceholder] with the given [name] and [loader].
   LazyPlaceholder({
     required super.name,
-    required this.value,
-    super.cacheable,
+    required this.loader,
+    super.cacheable = false,
   });
 
   @override
-  FutureOr<String> resolve() => value();
+  FutureOr<String> resolve() => loader();
 }

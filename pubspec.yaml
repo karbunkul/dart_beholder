@@ -1,9 +1,9 @@
 name: beholder
 description: A flexible logging library to build a logger exactly to your taste.
-version: 0.9.7-beta1
+version: 0.9.7
 
 environment:
-  sdk: ">=3.1.0 <4.0.0"
+  sdk: ">=3.11.0 <4.0.0"
 
 dev_dependencies:
   lints: ^3.0.0

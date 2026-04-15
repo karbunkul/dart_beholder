@@ -1,110 +1,98 @@
 import 'dart:async';
-
 import 'package:beholder/beholder.dart';
 
-enum AppLogTag {
-  ui('ui'),
-  network('network');
+/// 1. Define your log tags (optional, but recommended for type-safety).
+enum AppTag { ui, network, auth }
 
-  final String id;
-
-  const AppLogTag(this.id);
-}
-
-final class UserPlaceholder extends ContextPlaceholder {
-  const UserPlaceholder() : super(name: 'user', cacheable: true);
+/// 2. Define your logger options.
+final class MyOptions extends BeholderOptions<AppTag> {
+  @override
+  int get logLevel => 200; // Only log levels <= 200
 
   @override
-  FutureOr<String> resolve() => 'karbunkul';
-}
-
-final class ConsoleTransport extends Transport<String> {
-  @override
-  Future<String> log(entry) async {
-    return entry.placeholder.template(
-        '[{log_level_name} {log_tags}][{log_name}: {log_date_time}]\n{source_file} {user}'
-        '\n${entry.log.data}\n');
-  }
-
-  @override
-  void handle(String log) => print(log);
-}
-
-final class _Settings extends BeholderOptions<AppLogTag> {
-  @override
-  String mapTagToString(value) => value.id;
-
-  @override
-  List<LogLevel> get levels {
-    return [
-      LogLevel(
-        level: 100,
-        name: 'trace',
-        transports: [
-          // ConsoleTransport(),
-          // FileTransport(filename: './log-2.txt'),
-          RecordTransport(),
-          TransportAdapter(
-            transport: ConsoleTransport(),
-            onLog: (record) async {
-              return record.placeholder.template(
-                  '[{log_level_name}][{log_name} {log_tags}: {log_date_time}]\n{source_file}');
-            },
-          ),
-        ],
-      ),
-    ];
-  }
-
-  @override
-  List<ContextPlaceholder> get placeholders {
-    return [UserPlaceholder()];
-  }
-
-  @override
-  int get logLevel => 100;
-}
-
-final class Logger extends Beholder<AppLogTag> {
-  Logger(String name) : super(name: name, settings: _Settings());
-
-  void trace(LogEntry entry, {List<AppLogTag>? tags}) {
-    log(
-      entry: entry,
+  List<LogLevel> get levels => [
+    LogLevel(
       level: 100,
-      tags: tags,
-      placeholders: [
-        SourceFilePlaceholder(depth: 1, stackTrace: StackTrace.current),
+      name: 'info',
+      transports: [
+        // Use the built-in ConsoleTransport with a custom printer if needed
+        ConsoleTransport(),
       ],
-    );
-  }
+    ),
+    LogLevel(
+      level: 200,
+      name: 'error',
+      transports: [ConsoleTransport(onPrint: (msg) => print('🚨 ERROR: $msg'))],
+    ),
+  ];
 
   @override
-  void stackInfo({required String message, required Object info}) {
-    super.stackInfo(message: message, info: info);
-    trace(LogEntry(info, description: message));
+  List<ContextPlaceholder> get placeholders => [
+    // Custom global placeholder
+    ValuePlaceholder(name: 'version', value: '0.9.7'),
+  ];
+
+  @override
+  void onErrorHandler(Object error, StackTrace stackTrace) {
+    print('Beholder caught an error: $error');
+  }
+}
+
+/// 3. Create your logger class.
+final class MyLogger extends Beholder<AppTag> {
+  MyLogger(String name) : super(name: name, settings: MyOptions());
+
+  void info(String message, {List<AppTag>? tags}) {
+    log(level: 100, entry: LogEntry(message), tags: tags);
+  }
+
+  void error(
+    String message, {
+    Object? error,
+    StackTrace? st,
+    List<AppTag>? tags,
+  }) {
+    log(
+      level: 200,
+      entry: LogEntry(message, error: error, stackTrace: st),
+      tags: tags,
+    );
   }
 }
 
 Future<void> main() async {
-  const bool isReleaseMode = bool.fromEnvironment('dart.vm.product');
-  final logger = Logger('test');
+  final logger = MyLogger('App');
 
-  logger.record.listen((value) {
-    print(value.toString());
+  // 4. MUST initialize the logger before use if any transport needs it.
+  // In v0.9.7, it's a good practice to always await init().
+  await logger.init();
+
+  // 5. Listen to all records (e.g., for analytics)
+  logger.record.listen((record) {
+    // record.description resolves data via converters or toString()
+    // print('Stream monitor: ${record.description}');
   });
 
+  // 6. Use filters dynamically
   logger.filters
-    ..level(100)
-    // ..tag(AppLogTag.ui)
-    ..reset()
+    ..tag(.ui)
     ..apply();
 
-  logger.trace(LogEntry('value $isReleaseMode'), tags: [AppLogTag.network]);
-  logger.trace(LogEntry('value 234'), tags: [AppLogTag.ui]);
-  logger.stackInfo(message: 'foo', info: 2);
-  logger.stackInfo(message: 'bar', info: 4);
+  // This will NOT be printed because it doesn't have the AppTag.ui tag
+  logger.info('This is a network message', tags: [AppTag.network]);
 
-  logger.rethrowWithStackInfo(UnimplementedError(), StackTrace.current);
-  await Future.delayed(const Duration(milliseconds: 300), logger.dispose);
+  // This WILL be printed
+  logger.info('UI initialized!', tags: [AppTag.ui]);
+
+  // Logging an error with source file info
+  logger.error(
+    'Something went wrong',
+    error: Exception('Auth failed'),
+    tags: [AppTag.ui, AppTag.auth],
+  );
+
+  // 7. Cleanup
+  await logger.dispose();
+
+  print('Example finished.');
 }
