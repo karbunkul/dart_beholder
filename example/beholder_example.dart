@@ -2,12 +2,29 @@ import 'dart:async';
 import 'package:beholder/beholder.dart';
 
 /// 1. Define your log tags (optional, but recommended for type-safety).
-enum AppTag { ui, network, auth }
+enum AppTag {
+  ui('ui'),
+  network('network'),
+  auth('auth');
+
+  final String name;
+  const AppTag(this.name);
+}
+
+/// A sample technical data class that we might want to ignore in some transports.
+final class Heartbeat {
+  final DateTime time = DateTime.now();
+  @override
+  String toString() => 'Heartbeat at $time';
+}
 
 /// 2. Define your logger options.
 final class MyOptions extends BeholderOptions<AppTag> {
   @override
-  int get logLevel => 200; // Only log levels <= 200
+  int get logLevel => 100; // Only log levels >= 100
+
+  @override
+  String mapTagToString(AppTag tag) => tag.name;
 
   @override
   List<LogLevel> get levels => [
@@ -15,8 +32,12 @@ final class MyOptions extends BeholderOptions<AppTag> {
       level: 100,
       name: 'info',
       transports: [
-        // Use the built-in ConsoleTransport with a custom printer if needed
-        ConsoleTransport(),
+        // Use TransportAdapter to ignore Heartbeat messages in console
+        TransportAdapter(
+          transport: ConsoleTransport(),
+          ignoredTypes: {Heartbeat},
+          onLog: (record) => record.description,
+        ),
       ],
     ),
     LogLevel(
@@ -83,6 +104,9 @@ Future<void> main() async {
 
   // This WILL be printed
   logger.info('UI initialized!', tags: [AppTag.ui]);
+
+  // This will NOT be printed because Heartbeat is in ignoredTypes
+  logger.log(level: 100, entry: LogEntry(Heartbeat()), tags: [AppTag.ui]);
 
   // Logging an error with source file info
   logger.error(

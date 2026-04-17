@@ -27,6 +27,11 @@ abstract class Transport<R, D extends Object> {
   @mustCallSuper
   Future<void> dispose() async {}
 
+  /// Determines if this transport should process the given [record].
+  ///
+  /// Return false to skip logging this specific record for this transport.
+  bool shouldLog(RecordEntry<D> record) => true;
+
   /// Processes the [record] and returns a formatted result of type [R].
   ///
   /// This is the first step of the transport pipeline, usually involving

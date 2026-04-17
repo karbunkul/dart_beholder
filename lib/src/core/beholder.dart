@@ -172,6 +172,10 @@ abstract base class Beholder<T extends Object> {
     _recordController.add(record);
 
     for (final transport in transports) {
+      if (!transport.shouldLog(record)) {
+        continue;
+      }
+
       unawaited(
         Future.value(transport.log(record))
             .then(transport.handle)
