@@ -1,5 +1,8 @@
 part of 'core.dart';
 
+/// A callback used by [Beholder.measure] to wrap execution and measure its duration.
+typedef MeasureCallback<R> = FutureOr<R> Function();
+
 /// The base class for creating loggers in the Beholder system.
 ///
 /// [Beholder] is instance-based and manages the lifecycle of its [Transport]s.
@@ -26,20 +29,30 @@ abstract base class Beholder<T extends Object> {
       },
       _anyTransportNeedsInit =
           settings.levels.any((l) => l.transports.any((t) => t.needsInit)) ||
-          (settings.fallbackTransport?.needsInit ?? false);
+          (settings.fallbackTransport().needsInit) {
+    for (final converter in settings.converters) {
+      _converterCache[converter.type] = converter;
+    }
+  }
 
+  /// Measures the execution time of the provided [callback].
+  ///
+  /// The result of the measurement is output using the fallback transport.
+  /// An optional [message] can be provided to label the measurement in the logs.
+  ///
   static List<Transport> _extractUniqueTransports(BeholderOptions settings) {
     final transports = <Transport>{};
     for (final level in settings.levels) {
       transports.addAll(level.transports);
     }
-    if (settings.fallbackTransport != null) {
-      transports.add(settings.fallbackTransport!);
-    }
+    // if (settings.fallbackTransport != null) {
+    //   transports.add(settings.fallbackTransport!);
+    // }
     return List.unmodifiable(transports);
   }
 
   final _CacheController _cache;
+  final Map<Type, LogEntryConverter> _converterCache = {};
   final RecordController<Object> _recordController;
   FilterState _filterState;
 
@@ -138,35 +151,78 @@ abstract base class Beholder<T extends Object> {
         .toList(growable: false);
 
     final logTime = DateTime.now();
+
+    late final RecordEntry<D> record;
+
     final placeholder = PlaceholderManager(
       placeholders: [
         ...(placeholders ?? []),
         ..._options.placeholders,
-        ValuePlaceholder(name: 'log_name', value: name),
-        ValuePlaceholder(name: 'log_level', value: level.toString()),
-        ValuePlaceholder(
-          name: 'log_level_name',
-          value: _levelNames[level] ?? 'UNKNOWN',
+        LazyPlaceholder(
+          name: 'logName',
+          description: 'The name of the logger instance',
+          loader: () => name,
+          cacheable: true,
         ),
-        ValuePlaceholder(name: 'log_tags', value: logTags.toString()),
-        ValuePlaceholder(
-          name: 'log_date_time',
-          value: logTime.toIso8601String(),
+        LazyPlaceholder(
+          name: 'logLevel',
+          description: 'The numeric representation of the log level',
+          loader: () => level.toString(),
+          cacheable: true,
         ),
-        ValuePlaceholder(
-          name: 'log_date_time_utc',
-          value: logTime.toUtc().toIso8601String(),
+        LazyPlaceholder(
+          name: 'logLevelName',
+          description: 'The human-readable name of the log level',
+          loader: () => _levelNames[level],
+          cacheable: true,
+        ),
+        LazyPlaceholder(
+          name: 'logTags',
+          description: 'The list of string tags associated with the record',
+          loader: () => logTags.toString(),
+          cacheable: true,
+        ),
+        LazyPlaceholder(
+          name: 'logDateTime',
+          description: 'Local ISO8601 timestamp',
+          loader: () => logTime.toIso8601String(),
+          cacheable: true,
+        ),
+        LazyPlaceholder(
+          name: 'logDateTimeUtc',
+          description: 'UTC ISO8601 timestamp',
+          loader: () => logTime.toUtc().toIso8601String(),
+          cacheable: true,
+        ),
+        LazyPlaceholder(
+          name: 'logData',
+          description: 'The formatted log data resolved via LogEntryConverter',
+          loader: () => record.description,
+          cacheable: true,
+        ),
+        LazyPlaceholder(
+          name: 'logMessage',
+          description: 'The optional message string from LogEntry',
+          loader: () => record.log.message,
+          cacheable: true,
         ),
       ],
     )..attach(_cache);
 
-    final record = RecordEntry<D>(
+    final dataType = entry.data.runtimeType;
+    final converter = _converterCache[dataType] ??= _options.converters
+        .firstWhere(
+          (e) => e.hasMatch(entry.data),
+          orElse: () => LogEntryConverter(onConvert: (v) => v.toString()),
+        );
+
+    record = RecordEntry<D>(
       log: entry,
       placeholder: placeholder,
       level: level,
       time: logTime,
       tags: logTags,
-      converters: _options.converters,
+      converter: converter,
     );
 
     _recordController.add(record);
@@ -182,6 +238,30 @@ abstract base class Beholder<T extends Object> {
             .catchError((e, st) => _options.onErrorHandler(e, st)),
       );
     }
+  }
+
+  /// Measures the execution time of the provided [callback].
+  ///
+  /// The result of the measurement is output using the fallback transport.
+  /// An optional [message] can be provided to label the measurement in the logs.
+  /// Returns the result of the [callback].
+  FutureOr<R> measure<R>(MeasureCallback<R> callback, {String? message}) async {
+    final watch = Stopwatch();
+    watch.start();
+    final res = await callback();
+    watch.stop();
+
+    final label = message != null ? '[$message] ' : '';
+    final elapsed = watch.elapsed;
+    final timeDisplay = elapsed.inMilliseconds > 0
+        ? '${elapsed.inMilliseconds} ms'
+        : '${elapsed.inMicroseconds} μs';
+
+    _options.fallbackTransport().handle(
+      'MEASURE TIME: ${label}took $timeDisplay ($elapsed)',
+    );
+
+    return res;
   }
 
   bool _checkLog({required int level, List<T> tags = const []}) {

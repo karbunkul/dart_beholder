@@ -5,7 +5,11 @@ final class SourceFilePlaceholder extends ContextPlaceholder {
   final StackTrace stackTrace;
 
   SourceFilePlaceholder({required this.depth, required this.stackTrace})
-    : super(name: 'source_file', cacheable: false);
+    : super(
+        name: 'source_file',
+        cacheable: false,
+        description: 'Extract source file from stack trace via depth parameter',
+      );
 
   @override
   FutureOr<String> resolve() {

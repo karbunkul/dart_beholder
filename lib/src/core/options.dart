@@ -13,7 +13,7 @@ abstract base class BeholderOptions<T extends Object> {
   List<LogLevel> get levels;
 
   /// An optional transport that will receive ALL log records, regardless of level.
-  Transport? get fallbackTransport => null;
+  Transport<String, Object> fallbackTransport() => ConsoleTransport();
 
   /// A list of global [ContextPlaceholder]s that will be available for all logs.
   List<ContextPlaceholder> get placeholders => const [];
@@ -44,9 +44,9 @@ abstract base class BeholderOptions<T extends Object> {
       }
     }
 
-    if (fallbackTransport != null) {
-      transports.add(fallbackTransport!);
-    }
+    // if (fallbackTransport != null) {
+    //   transports.add(fallbackTransport!);
+    // }
 
     return List.unmodifiable(transports);
   }

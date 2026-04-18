@@ -5,6 +5,8 @@ part of 'core.dart';
 /// [D] is the type of the data (e.g., [String], [Map], or a custom object).
 @immutable
 class LogEntry<D extends Object> {
+  final String? message;
+
   /// The actual data or message to be logged.
   final D data;
 
@@ -15,5 +17,5 @@ class LogEntry<D extends Object> {
   final StackTrace? stackTrace;
 
   /// Creates a [LogEntry] with the given [data] and optional error context.
-  const LogEntry(this.data, {this.error, this.stackTrace});
+  const LogEntry(this.data, {this.message, this.error, this.stackTrace});
 }

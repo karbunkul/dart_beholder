@@ -28,7 +28,7 @@ void main() {
     test('should ignore specified types', () async {
       final adapter = TransportAdapter<String, Object>(
         transport: mock,
-        ignoredTypes: {_TestData},
+        ignoredTypes: [_TestData],
         onLog: (record) => record.description,
       );
 
@@ -37,17 +37,17 @@ void main() {
         placeholder: PlaceholderManager(placeholders: []),
         level: 100,
         time: DateTime.now(),
-        tags: [],
+        tags: const [],
+        converter: LogEntryConverter(onConvert: (v) => v.toString()),
       );
 
-      // shouldLog should be false for _TestData
       expect(adapter.shouldLog(record), isFalse);
     });
 
     test('should allow non-ignored types', () async {
       final adapter = TransportAdapter<String, Object>(
         transport: mock,
-        ignoredTypes: {_TestData},
+        ignoredTypes: [_TestData],
         onLog: (record) => record.description,
       );
 
@@ -56,29 +56,59 @@ void main() {
         placeholder: PlaceholderManager(placeholders: []),
         level: 100,
         time: DateTime.now(),
-        tags: [],
+        tags: const [],
+        converter: LogEntryConverter(onConvert: (v) => v.toString()),
       );
 
       expect(adapter.shouldLog(record), isTrue);
     });
 
-    test('should respect underlying transport shouldLog', () async {
-      // Create a scenario where the inner transport would return false
-      // (though our mock returns true by default)
+    test('should filter by allowedTags', () async {
       final adapter = TransportAdapter<String, Object>(
         transport: mock,
+        allowedTags: ['essential'],
         onLog: (record) => record.description,
       );
 
-      final record = RecordEntry<Object>(
+      final recordEssential = RecordEntry<Object>(
         log: LogEntry('data'),
         placeholder: PlaceholderManager(placeholders: []),
         level: 100,
         time: DateTime.now(),
-        tags: [],
+        tags: ['essential'],
+        converter: LogEntryConverter(onConvert: (v) => v.toString()),
       );
 
-      expect(adapter.shouldLog(record), isTrue);
+      final recordOther = RecordEntry<Object>(
+        log: LogEntry('data'),
+        placeholder: PlaceholderManager(placeholders: []),
+        level: 100,
+        time: DateTime.now(),
+        tags: ['debug'],
+        converter: LogEntryConverter(onConvert: (v) => v.toString()),
+      );
+
+      expect(adapter.shouldLog(recordEssential), isTrue);
+      expect(adapter.shouldLog(recordOther), isFalse);
+    });
+
+    test('should filter by ignoredTags', () async {
+      final adapter = TransportAdapter<String, Object>(
+        transport: mock,
+        ignoredTags: ['noisy'],
+        onLog: (record) => record.description,
+      );
+
+      final recordNoisy = RecordEntry<Object>(
+        log: LogEntry('data'),
+        placeholder: PlaceholderManager(placeholders: []),
+        level: 100,
+        time: DateTime.now(),
+        tags: ['noisy', 'essential'],
+        converter: LogEntryConverter(onConvert: (v) => v.toString()),
+      );
+
+      expect(adapter.shouldLog(recordNoisy), isFalse);
     });
   });
 }

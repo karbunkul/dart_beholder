@@ -27,6 +27,11 @@ final class MyOptions extends BeholderOptions<AppTag> {
   String mapTagToString(AppTag tag) => tag.name;
 
   @override
+  List<LogEntryConverter> get converters => [
+    LogEntryConverter<AppTag>(onConvert: (value) => value?.name ?? 'unknown'),
+  ];
+
+  @override
   List<LogLevel> get levels => [
     LogLevel(
       level: 100,
@@ -35,8 +40,14 @@ final class MyOptions extends BeholderOptions<AppTag> {
         // Use TransportAdapter to ignore Heartbeat messages in console
         TransportAdapter(
           transport: ConsoleTransport(),
-          ignoredTypes: {Heartbeat},
-          onLog: (record) => record.description,
+          // ignoredTypes: [Heartbeat],
+          allowedTypes: [Heartbeat],
+          allowedTags: [AppTag.ui.name],
+          onLog: (record) {
+            record.placeholder.help();
+
+            return record.description;
+          },
         ),
       ],
     ),
@@ -49,8 +60,12 @@ final class MyOptions extends BeholderOptions<AppTag> {
 
   @override
   List<ContextPlaceholder> get placeholders => [
-    // Custom global placeholder
-    ValuePlaceholder(name: 'version', value: '0.9.7'),
+    // Custom global placeholder with description
+    ValuePlaceholder(
+      name: 'version',
+      description: 'The current version of the application',
+      value: '0.9.8',
+    ),
   ];
 
   @override
@@ -63,8 +78,12 @@ final class MyOptions extends BeholderOptions<AppTag> {
 final class MyLogger extends Beholder<AppTag> {
   MyLogger(String name) : super(name: name, settings: MyOptions());
 
-  void info(String message, {List<AppTag>? tags}) {
-    log(level: 100, entry: LogEntry(message), tags: tags);
+  void info(Object data, {String? message, List<AppTag>? tags}) {
+    log(
+      level: 100,
+      entry: LogEntry(data, message: message),
+      tags: tags,
+    );
   }
 
   void error(
@@ -104,9 +123,10 @@ Future<void> main() async {
 
   // This WILL be printed
   logger.info('UI initialized!', tags: [AppTag.ui]);
+  logger.info(AppTag.auth, tags: [AppTag.ui]);
 
   // This will NOT be printed because Heartbeat is in ignoredTypes
-  logger.log(level: 100, entry: LogEntry(Heartbeat()), tags: [AppTag.ui]);
+  logger.info(Heartbeat(), tags: [AppTag.ui]);
 
   // Logging an error with source file info
   logger.error(
@@ -115,7 +135,14 @@ Future<void> main() async {
     tags: [AppTag.ui, AppTag.auth],
   );
 
-  // 7. Cleanup
+  // 7. Measure execution time
+  // The result will be logged with the {measureTime} placeholder available.
+  await logger.measure(() async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    return 'Heavy computation finished';
+  }, message: 'Heavy computation');
+
+  // 8. Cleanup
   await logger.dispose();
 
   print('Example finished.');
