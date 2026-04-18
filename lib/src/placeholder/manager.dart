@@ -4,9 +4,8 @@ final class PlaceholderManager {
   final List<ContextPlaceholder> _placeholders;
   CacheController? _cache;
 
-  PlaceholderManager({
-    required List<ContextPlaceholder> placeholders,
-  }) : _placeholders = placeholders;
+  PlaceholderManager({required List<ContextPlaceholder> placeholders})
+    : _placeholders = placeholders;
 
   void attach(CacheController cache) => _cache = cache;
 
@@ -17,16 +16,17 @@ final class PlaceholderManager {
       return cache.get(key: placeholder)!;
     }
 
-    final placeholderInstance = _placeholders
-        .firstWhere((p) => p.name.toLowerCase() == placeholder.toLowerCase());
+    final placeholderInstance = _placeholders.firstWhere(
+      (p) => p.name.toLowerCase() == placeholder.toLowerCase(),
+    );
 
     final value = await placeholderInstance.resolve();
 
     if (placeholderInstance.cacheable) {
-      _cache?.set(key: placeholder, value: value);
+      _cache?.set(key: placeholder, value: value ?? '');
     }
 
-    return value;
+    return value ?? '';
   }
 
   Future<String?> resolve(String placeholder) async {
@@ -58,8 +58,6 @@ final class PlaceholderManager {
   }
 
   List<String> available() {
-    return _placeholders
-        .map((e) => e.name.toLowerCase())
-        .toList(growable: false);
+    return _placeholders.map((e) => e.name).toList(growable: false);
   }
 }

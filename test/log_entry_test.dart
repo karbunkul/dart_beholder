@@ -55,12 +55,17 @@ RecordEntry<T> _makeRecordEntry<T extends Object>({
   final placeholder = PlaceholderManager(placeholders: [])
     ..attach(_FakeCache());
 
+  final converter = converters.firstWhere(
+    (e) => e.hasMatch(log.data),
+    orElse: () => LogEntryConverter(onConvert: (v) => v.toString()),
+  );
+
   return RecordEntry<T>(
     log: log,
     placeholder: placeholder,
     level: level,
     time: DateTime.now(),
-    converters: converters,
-    tags: [],
+    tags: const [],
+    converter: converter,
   );
 }

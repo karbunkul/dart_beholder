@@ -37,7 +37,8 @@ void main() {
         placeholder: PlaceholderManager(placeholders: []),
         level: 100,
         time: DateTime.now(),
-        tags: [],
+        tags: const [],
+        converter: LogEntryConverter(onConvert: (v) => v.toString()),
       );
 
       // shouldLog should be false for _TestData
@@ -56,7 +57,8 @@ void main() {
         placeholder: PlaceholderManager(placeholders: []),
         level: 100,
         time: DateTime.now(),
-        tags: [],
+        tags: const [],
+        converter: LogEntryConverter(onConvert: (v) => v.toString()),
       );
 
       expect(adapter.shouldLog(record), isTrue);
@@ -75,7 +77,8 @@ void main() {
         placeholder: PlaceholderManager(placeholders: []),
         level: 100,
         time: DateTime.now(),
-        tags: [],
+        tags: const [],
+        converter: LogEntryConverter(onConvert: (v) => v.toString()),
       );
 
       expect(adapter.shouldLog(record), isTrue);

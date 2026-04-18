@@ -23,7 +23,7 @@ final class RecordEntry<T extends Object> {
   /// A string representation of the log data after processing by converters.
   String get description => toString();
 
-  final Iterable<LogEntryConverter> _converters;
+  final LogEntryConverter _converter;
 
   /// Creates a [RecordEntry] with the given metadata.
   const RecordEntry({
@@ -32,17 +32,12 @@ final class RecordEntry<T extends Object> {
     required this.level,
     required this.time,
     required this.tags,
-    Iterable<LogEntryConverter>? converters,
-  }) : _converters = converters ?? const [];
+    required LogEntryConverter converter,
+  }) : _converter = converter;
 
   @override
   String toString() {
-    final converter = _converters.firstWhere(
-      (e) => e.hasMatch(log.data),
-      orElse: () => LogEntryConverter<T>(onConvert: (e) => e.toString()),
-    );
-
-    return converter.cast().onConvert(log.data).toString();
+    return _converter.cast().onConvert(log.data).toString();
   }
 }
 

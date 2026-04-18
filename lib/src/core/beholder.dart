@@ -26,7 +26,11 @@ abstract base class Beholder<T extends Object> {
       },
       _anyTransportNeedsInit =
           settings.levels.any((l) => l.transports.any((t) => t.needsInit)) ||
-          (settings.fallbackTransport?.needsInit ?? false);
+          (settings.fallbackTransport?.needsInit ?? false) {
+    for (final converter in settings.converters) {
+      _converterCache[converter.type] = converter;
+    }
+  }
 
   static List<Transport> _extractUniqueTransports(BeholderOptions settings) {
     final transports = <Transport>{};
@@ -40,6 +44,7 @@ abstract base class Beholder<T extends Object> {
   }
 
   final _CacheController _cache;
+  final Map<Type, LogEntryConverter> _converterCache = {};
   final RecordController<Object> _recordController;
   FilterState _filterState;
 
@@ -138,35 +143,66 @@ abstract base class Beholder<T extends Object> {
         .toList(growable: false);
 
     final logTime = DateTime.now();
+
+    late final RecordEntry<D> record;
+
     final placeholder = PlaceholderManager(
       placeholders: [
         ...(placeholders ?? []),
         ..._options.placeholders,
-        ValuePlaceholder(name: 'log_name', value: name),
-        ValuePlaceholder(name: 'log_level', value: level.toString()),
-        ValuePlaceholder(
-          name: 'log_level_name',
-          value: _levelNames[level] ?? 'UNKNOWN',
+        LazyPlaceholder(name: 'logName', loader: () => name, cacheable: true),
+        LazyPlaceholder(
+          name: 'logLevel',
+          loader: () => level.toString(),
+          cacheable: true,
         ),
-        ValuePlaceholder(name: 'log_tags', value: logTags.toString()),
-        ValuePlaceholder(
-          name: 'log_date_time',
-          value: logTime.toIso8601String(),
+        LazyPlaceholder(
+          name: 'logLevelName',
+          loader: () => _levelNames[level],
+          cacheable: true,
         ),
-        ValuePlaceholder(
-          name: 'log_date_time_utc',
-          value: logTime.toUtc().toIso8601String(),
+        LazyPlaceholder(
+          name: 'logTags',
+          loader: () => logTags.toString(),
+          cacheable: true,
+        ),
+        LazyPlaceholder(
+          name: 'logDateTime',
+          loader: () => logTime.toIso8601String(),
+          cacheable: true,
+        ),
+        LazyPlaceholder(
+          name: 'logDateTimeUtc',
+          loader: () => logTime.toUtc().toIso8601String(),
+          cacheable: true,
+        ),
+        LazyPlaceholder(
+          name: 'logData',
+          loader: () => record.description,
+          cacheable: true,
+        ),
+        LazyPlaceholder(
+          name: 'logMessage',
+          loader: () => record.log.message,
+          cacheable: true,
         ),
       ],
     )..attach(_cache);
 
-    final record = RecordEntry<D>(
+    final dataType = entry.data.runtimeType;
+    final converter = _converterCache[dataType] ??= _options.converters
+        .firstWhere(
+          (e) => e.hasMatch(entry.data),
+          orElse: () => LogEntryConverter(onConvert: (v) => v.toString()),
+        );
+
+    record = RecordEntry<D>(
       log: entry,
       placeholder: placeholder,
       level: level,
       time: logTime,
       tags: logTags,
-      converters: _options.converters,
+      converter: converter,
     );
 
     _recordController.add(record);
