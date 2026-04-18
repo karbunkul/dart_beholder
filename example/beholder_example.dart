@@ -42,6 +42,7 @@ final class MyOptions extends BeholderOptions<AppTag> {
           transport: ConsoleTransport(),
           // ignoredTypes: {Heartbeat},
           allowedTypes: {Heartbeat},
+          allowedTags: {AppTag.ui.name},
           onLog: (record) {
             print(record.placeholder.available());
 
