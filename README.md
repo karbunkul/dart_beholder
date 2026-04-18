@@ -12,9 +12,9 @@ Many transports (databases, files, network clients) require asynchronous setup. 
 
 ### Advanced Transport Filtering 🛡️
 Fine-tune which data each transport handles with precision:
-- **Whitelist (`allowedTypes`)**: Only process specific data types (e.g., only `Request/Response` for a network logger).
-- **Blacklist (`ignoredTypes`)**: Skip "noisy" types (e.g., `Heartbeat` or `AnalyticsEvent`).
-- **Synchronous Checks**: Filtering happens instantly before any expensive record processing begins.
+- **Type Filtering (`allowedTypes` / `ignoredTypes`)**: Control processing based on the data type (e.g., skip `Heartbeat` or only allow `NetworkRequest`).
+- **Tag Filtering (`allowedTags` / `ignoredTags`)**: Filter records based on their string tags. Perfect for isolating "UI" logs from "Network" logs even if they share the same level.
+- **Synchronous Checks**: Filtering happens instantly before any expensive record processing (like converter execution) begins.
 
 ### Smart Placeholders 🧩
 Beholder uses a lazy, high-performance templating system. You can use built-in placeholders or provide custom ones via `ContextPlaceholder`.
@@ -36,8 +36,8 @@ If you are building a custom transport and need to know which keys are available
 ```dart
 @override
 Future<String> log(RecordEntry<Object> record) async {
-  final availableKeys = record.placeholder.available(); 
-  print('Available placeholders: $availableKeys');
+  // Print all available placeholders
+  record.placeholder.help();
   
   // Use the manager to resolve a specific template
   return record.placeholder.template('[{logLevelName}] {logData}');
@@ -70,7 +70,8 @@ final class MyOptions extends BeholderOptions<AppTag> {
         // Use TransportAdapter for fine-grained control
         TransportAdapter(
           transport: ConsoleTransport(),
-          ignoredTypes: {Heartbeat}, // Skip technical noise in console
+          ignoredTypes: [Heartbeat], // Skip technical noise
+          ignoredTags: ['internal', 'sensitive'], // Skip specific tags
           onLog: (record) => '[${record.time}] ${record.description}',
         ),
       ],

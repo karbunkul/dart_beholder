@@ -150,39 +150,51 @@ abstract base class Beholder<T extends Object> {
       placeholders: [
         ...(placeholders ?? []),
         ..._options.placeholders,
-        LazyPlaceholder(name: 'logName', loader: () => name, cacheable: true),
+        LazyPlaceholder(
+          name: 'logName',
+          description: 'The name of the logger instance',
+          loader: () => name,
+          cacheable: true,
+        ),
         LazyPlaceholder(
           name: 'logLevel',
+          description: 'The numeric representation of the log level',
           loader: () => level.toString(),
           cacheable: true,
         ),
         LazyPlaceholder(
           name: 'logLevelName',
+          description: 'The human-readable name of the log level',
           loader: () => _levelNames[level],
           cacheable: true,
         ),
         LazyPlaceholder(
           name: 'logTags',
+          description: 'The list of string tags associated with the record',
           loader: () => logTags.toString(),
           cacheable: true,
         ),
         LazyPlaceholder(
           name: 'logDateTime',
+          description: 'Local ISO8601 timestamp',
           loader: () => logTime.toIso8601String(),
           cacheable: true,
         ),
         LazyPlaceholder(
           name: 'logDateTimeUtc',
+          description: 'UTC ISO8601 timestamp',
           loader: () => logTime.toUtc().toIso8601String(),
           cacheable: true,
         ),
         LazyPlaceholder(
           name: 'logData',
+          description: 'The formatted log data resolved via LogEntryConverter',
           loader: () => record.description,
           cacheable: true,
         ),
         LazyPlaceholder(
           name: 'logMessage',
+          description: 'The optional message string from LogEntry',
           loader: () => record.log.message,
           cacheable: true,
         ),

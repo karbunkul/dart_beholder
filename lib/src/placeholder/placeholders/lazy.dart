@@ -13,6 +13,7 @@ final class LazyPlaceholder extends ContextPlaceholder {
   /// Creates a [LazyPlaceholder] with the given [name] and [loader].
   LazyPlaceholder({
     required super.name,
+    required super.description,
     required this.loader,
     super.cacheable = false,
   });

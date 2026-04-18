@@ -40,11 +40,11 @@ final class MyOptions extends BeholderOptions<AppTag> {
         // Use TransportAdapter to ignore Heartbeat messages in console
         TransportAdapter(
           transport: ConsoleTransport(),
-          // ignoredTypes: {Heartbeat},
-          allowedTypes: {Heartbeat},
-          allowedTags: {AppTag.ui.name},
+          // ignoredTypes: [Heartbeat],
+          allowedTypes: [Heartbeat],
+          allowedTags: [AppTag.ui.name],
           onLog: (record) {
-            print(record.placeholder.available());
+            record.placeholder.help();
 
             return record.description;
           },
@@ -60,8 +60,12 @@ final class MyOptions extends BeholderOptions<AppTag> {
 
   @override
   List<ContextPlaceholder> get placeholders => [
-    // Custom global placeholder
-    ValuePlaceholder(name: 'version', value: '0.9.7'),
+    // Custom global placeholder with description
+    ValuePlaceholder(
+      name: 'version',
+      description: 'The current version of the application',
+      value: '0.9.8',
+    ),
   ];
 
   @override
