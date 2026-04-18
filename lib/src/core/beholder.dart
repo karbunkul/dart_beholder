@@ -1,5 +1,8 @@
 part of 'core.dart';
 
+/// A callback used by [Beholder.measure] to wrap execution and measure its duration.
+typedef MeasureCallback<R> = FutureOr<R> Function();
+
 /// The base class for creating loggers in the Beholder system.
 ///
 /// [Beholder] is instance-based and manages the lifecycle of its [Transport]s.
@@ -26,20 +29,25 @@ abstract base class Beholder<T extends Object> {
       },
       _anyTransportNeedsInit =
           settings.levels.any((l) => l.transports.any((t) => t.needsInit)) ||
-          (settings.fallbackTransport?.needsInit ?? false) {
+          (settings.fallbackTransport().needsInit) {
     for (final converter in settings.converters) {
       _converterCache[converter.type] = converter;
     }
   }
 
+  /// Measures the execution time of the provided [callback].
+  ///
+  /// The result of the measurement is output using the fallback transport.
+  /// An optional [message] can be provided to label the measurement in the logs.
+  ///
   static List<Transport> _extractUniqueTransports(BeholderOptions settings) {
     final transports = <Transport>{};
     for (final level in settings.levels) {
       transports.addAll(level.transports);
     }
-    if (settings.fallbackTransport != null) {
-      transports.add(settings.fallbackTransport!);
-    }
+    // if (settings.fallbackTransport != null) {
+    //   transports.add(settings.fallbackTransport!);
+    // }
     return List.unmodifiable(transports);
   }
 
@@ -230,6 +238,30 @@ abstract base class Beholder<T extends Object> {
             .catchError((e, st) => _options.onErrorHandler(e, st)),
       );
     }
+  }
+
+  /// Measures the execution time of the provided [callback].
+  ///
+  /// The result of the measurement is output using the fallback transport.
+  /// An optional [message] can be provided to label the measurement in the logs.
+  /// Returns the result of the [callback].
+  FutureOr<R> measure<R>(MeasureCallback<R> callback, {String? message}) async {
+    final watch = Stopwatch();
+    watch.start();
+    final res = await callback();
+    watch.stop();
+
+    final label = message != null ? '[$message] ' : '';
+    final elapsed = watch.elapsed;
+    final timeDisplay = elapsed.inMilliseconds > 0
+        ? '${elapsed.inMilliseconds} ms'
+        : '${elapsed.inMicroseconds} μs';
+
+    _options.fallbackTransport().handle(
+      'MEASURE TIME: ${label}took $timeDisplay ($elapsed)',
+    );
+
+    return res;
   }
 
   bool _checkLog({required int level, List<T> tags = const []}) {

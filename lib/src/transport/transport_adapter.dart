@@ -33,6 +33,9 @@ final class TransportAdapter<R, D extends Object> extends Transport<R, D> {
 
   final bool? _needsInit;
 
+  @override
+  bool get needsInit => _needsInit ?? transport.needsInit;
+
   /// Creates a [TransportAdapter] that wraps [transport] and uses [onLog] for formatting.
   ///
   /// * [ignoredTypes]: Records with these data types will be skipped.

@@ -5,12 +5,12 @@ import 'package:test/test.dart';
 base class TestOptions extends BeholderOptions<String> {
   final List<LogLevel> _levels;
   final int _logLevel;
-  final Transport<Object, Object>? _fallbackTransport;
+  final Transport<String, Object>? _fallbackTransport;
 
   TestOptions(
     this._levels, {
     int logLevel = 100,
-    Transport<Object, Object>? fallbackTransport,
+    Transport<String, Object>? fallbackTransport,
   }) : _logLevel = logLevel,
        _fallbackTransport = fallbackTransport;
 
@@ -21,7 +21,8 @@ base class TestOptions extends BeholderOptions<String> {
   int get logLevel => _logLevel;
 
   @override
-  Transport<Object, Object>? get fallbackTransport => _fallbackTransport;
+  Transport<String, Object> fallbackTransport() =>
+      _fallbackTransport ?? super.fallbackTransport();
 }
 
 // Фейковый логгер для тестирования защищенных методов Beholder

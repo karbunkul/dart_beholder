@@ -135,7 +135,14 @@ Future<void> main() async {
     tags: [AppTag.ui, AppTag.auth],
   );
 
-  // 7. Cleanup
+  // 7. Measure execution time
+  // The result will be logged with the {measureTime} placeholder available.
+  await logger.measure(() async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    return 'Heavy computation finished';
+  }, message: 'Heavy computation');
+
+  // 8. Cleanup
   await logger.dispose();
 
   print('Example finished.');
